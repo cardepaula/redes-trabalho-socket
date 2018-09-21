@@ -11,8 +11,6 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
-
-
 struct mensagem{
 	time_t td; /* Data e hora atual */
 	char nome[128]; /* nome do servidor */
