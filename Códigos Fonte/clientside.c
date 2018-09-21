@@ -1,7 +1,4 @@
- /* daytime.c	
- *	
- * Example de cliente para data e hora	
- */	
+ /* Client side code */	
  #include <stdio.h>	
  #include <unistd.h>
  #include <stdlib.h>

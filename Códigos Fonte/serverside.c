@@ -1,7 +1,4 @@
-/* server.c:
-*
-* Exemplo de servidor de data e hora:
-*/
+/* Server side code */
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
