@@ -10,6 +10,11 @@
  #include <arpa/inet.h>	
  #include <netdb.h>	
  #include <time.h>
+ #include <ctype.h>
+
+/* Constantes */
+#define FALSE 0;
+#define TRUE 1;
 
 typedef struct mensagem{
 	short port;
@@ -20,10 +25,9 @@ typedef struct mensagem{
 
 /* Protótipo das funções utilizadas */
 int leituraUsuario();
+int isAllDigit();
 
-/*	
-* Esta função reporta erro e finaliza do programa
-*/	
+/* Esta função reporta erro e finaliza do programa */	
 static void	
 bail(const char *on_what) {	
 if ( errno != 0 ) {	
@@ -39,7 +43,7 @@ int main(int argc,char *argv[]) {
 	int z;
 	char *srvr_addr = "127.0.0.1"; /* Usando valor padrão */
 	char *srvr_port = "9099";
-	struct sockaddr_in adr_srvr;/* AF_INET */
+	struct sockaddr_in adr_srvr; /* AF_INET */
 	int len_inet; /* comprimento */
 	int s; /* Socket */
 	char dtbuf[128]; /* Informação de data e hora */
@@ -49,7 +53,7 @@ int main(int argc,char *argv[]) {
 
 	/* Usuário só pode passar uma porta como argumento */
 	if ( argc != 2 ) {
-		printf("Precisa passar a única porta como argumento!\n");
+		printf("Precisa passar uma porta que deseja entrar como argumento!\n");
 		exit(1);
 	} 
 
@@ -117,29 +121,36 @@ int main(int argc,char *argv[]) {
 	// putchar('\n');	
 
 	int codigoUsuario = 0;
-
 	codigoUsuario = leituraUsuario();
-
-	
 	
 	return 0;	
 }
 
+/* Faz a leitura da entrada de dados do usuário */
 int leituraUsuario() {
 	int codigoUsuario = 0;
 	char strCodigoUsuario[1000];
 
 	printf("Digite o código de usuário: ");
 	scanf("%s", strCodigoUsuario);	
-	
+
 	/* Usuário não pode digitar mais que 4 caracteres */
-	while (strlen(strCodigoUsuario) > 4) {
-		printf("Favor digite somente 4 digitos numericos.\n");
+	while ((strlen(strCodigoUsuario) != 4 || !isAllDigit(strCodigoUsuario)) && strcmp(strCodigoUsuario, "-1") != 0) {
+		printf("Favor digite somente 4 dígitos numéricos.\n");
 		printf("Digite o código de usuário: ");
 		scanf("%s", strCodigoUsuario);
 	}
-
 	codigoUsuario = atoi(strCodigoUsuario);
-	printf("%d\n", codigoUsuario);
+	
 	return codigoUsuario;	
+}
+
+/* Checa se a string passada é de somente dígitos numéricos */
+int isAllDigit(char* strDigit) {
+	for (int i = 0; i < strlen(strDigit); i++) {
+		if (!isdigit(strDigit[i])) {
+			return FALSE;
+		} 
+	}
+	return TRUE;
 }
