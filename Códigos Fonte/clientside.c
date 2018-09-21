@@ -61,6 +61,7 @@ int main(int argc,char *argv[]) {
 	printf("%ld\n", msg.td);																													
 	
 	/* Pegando a informação de hora e data que o cliente faz a requisição ao servidor */
+	time(&msg.td); // Pega hora atual
 	n = (int)strftime(dtbuf,sizeof dtbuf,"%A %b %d %H:%M:%S %Y\n", localtime(&msg.td));	
 	dtbuf[n] = 0;
 
