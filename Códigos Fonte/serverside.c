@@ -78,7 +78,7 @@ int main(int argc, char **argv)
 	{
 		bail("socket()");
 	}
-
+	printf("AAAAAAAAAAAAAA\n");
 	/* Preenche a estrutura do socket com a porta e endereço do servidor */
 	memset(&adr_srvr, 0, sizeof(adr_srvr));
 	adr_srvr.sin_family = AF_INET;
@@ -99,13 +99,14 @@ int main(int argc, char **argv)
 	}
 
 	/* Liga (bind) o socket com o endereço/porta */
+	printf("BBBBBBBBBBBBBBB\n");
 	len_inet = sizeof(adr_srvr);
 	z = bind(s, (struct sockaddr *)&adr_srvr, len_inet);
 	if (z == -1)
 	{
 		bail("bind(2)");
 	}
-
+	printf("CCCCCCCCCCCCCCCCCCCC\n");
 	/* Coloca o socket do servidor em estado de "escuta" com até 10 clientes simultâneos*/
 	z = listen(s, 10);
 	if (z == -1)
@@ -122,7 +123,7 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	arqRegistros = fopen(caminhoArqRegistros, "a");
+	arqRegistros = fopen(caminhoArqRegistros, "a+");
 	if (arqRegistros == NULL)
 	{
 		printf("Error ao abrir o arquivo de registros.\n");
@@ -286,13 +287,14 @@ usuário na estrutura mensagem*/
 void verificaCredenciais(User **users, Message *msg, int qntUsuariosCredenciados)
 {
 	time(&msg->td);
-	printf("Aqui!!!\n");
+
 	for (int i = 0; i < qntUsuariosCredenciados; i++)
 	{
-		printf("Aqui!!!\n");
+
 		//print("%"users[i]->codUsuario
 		if (users[i]->codUsuario == msg->codUsuario)
 		{
+			printf("%s\n", users[i]->nomeUsuario);
 
 			/* Preenche o campo da mensagem com o nome do usuário */
 			strcpy(msg->nomeUsuario, users[i]->nomeUsuario);
@@ -323,6 +325,7 @@ void atualizaRegistro(FILE *arqRegistros, Message *msg)
 	dtbuf[n] = 0;
 	char strAutorizacao[30];
 
+	printf("%c\n", msg->autorizacao);
 	switch (msg->autorizacao)
 	{
 	case 'A':
@@ -339,6 +342,10 @@ void atualizaRegistro(FILE *arqRegistros, Message *msg)
 		exit(3);
 	}
 
-	//printf("%s", dtbuf);
-	fprintf(arqRegistros, "%s, %d, %d, %s\n", dtbuf, msg->port, msg->codUsuario, strAutorizacao);
+	printf("%s\n", dtbuf);
+	printf("%d ", msg->port);
+	printf("%d ", msg->codUsuario);
+	printf("%s\n", strAutorizacao);
+	//fprintf(arqRegistros, "%s, %d, %d, %s\n", dtbuf, msg->port, msg->codUsuario, strAutorizacao);
+	fprintf(arqRegistros, "AAAAAAAAAAA\n");
 }
