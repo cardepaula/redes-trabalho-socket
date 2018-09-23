@@ -7,7 +7,7 @@
 </div>
 
 
-## Tutorial de executar os códigos com sucesso!
+### Tutorial de executar os códigos com sucesso!
     OBS.: O tutorial vai ser feito com o foco no ambiente Linux, pois nele que foi
     desenvolvido toda a implementação do trabalho. Logo se for usar o mesmo tutorial
     em outro ambiente/SO possivelmente terá problemas. Um exemplo disso é o caminho
@@ -16,7 +16,7 @@
     sistema linux é: 
     ./database/nomeArquivo.txt
 
-### Compilação dos arquivos .c:
+#### Compilação dos arquivos .c:
 
     Os arquivos serverside.c e clientside.c são os códigos fontes que contém as
     codificações realizadas. Para compilá-los siga os seguintes passos:
@@ -32,7 +32,7 @@
     3) Compile o arquivo clientside.c no terminal da seguinte maneira:
       gcc -o client.exe clientside.c
 
-### Como executar os arquivos .exe:
+#### Como executar os arquivos .exe:
 
     4) Perceba que no mesmo diretório surgirá dois arquivos executáveis (.exe)
        chamados server.exe e client.exe. Para executá-los faça o seguinte:
@@ -60,7 +60,7 @@
     usuário que deseja entrar na porta pode ser digita o valor -1 que também funciona
     semelhante ao comando Ctrl + c;
 
-### Como visualizar o arquivo de registro?
+#### Como visualizar o arquivo de registro?
 
     7) Para visualizar o arquivo de registro pode-se fazer das seguintes maneiras:
 
