@@ -17,6 +17,7 @@
 #define FALSE 0;
 #define TRUE 1;
 #define DIGITOSCODUSER 4;
+#define QNTMAXPORTAS 5;
 
 typedef struct mensagem
 {
@@ -56,7 +57,7 @@ int main(int argc, char *argv[])
 	char dtbuf[128];			   /* Informação de data e hora */
 	time_t td;					   /* Data e hora atual */
 	int n;
-	message msg;
+	Message msg;
 
 	/* Usuário só pode passar uma porta como argumento */
 	if (argc != 2)
@@ -70,6 +71,16 @@ int main(int argc, char *argv[])
 	{
 		printf("Favor passar somente dígitos numéricos como argumento para a identificação da porta!\n");
 		exit(2);
+	}
+
+	/* Checa se o número da porta passado pelo usuário existe no contexto do ambiente */
+	short idPortaUsuario = (short)atoi(argv[1]);
+	int qntMaxPortas = QNTMAXPORTAS;
+
+	if (idPortaUsuario > qntMaxPortas && idPortaUsuario == 0)
+	{
+		printf("Digite a identificação da porta na linha de comando de 1 a %d somente", qntMaxPortas);
+		exit(3);
 	}
 
 	/* Cria um socket do tipo TCP */
@@ -102,11 +113,11 @@ int main(int argc, char *argv[])
 	int codigoUsuario = leituraUsuario();
 
 	/* Preenche a estrutura mensagem com a porta e o código do usuário */
-	msg.port = (short)atoi(argv[1]);
+	msg.port = idPortaUsuario;
 	msg.codUsuario = codigoUsuario;
 
 	/* Escreve a mensagem para o socket do servidor */
-	z = write(s, (const void *)&msg, sizeof(message));
+	z = write(s, (const void *)&msg, sizeof(Message));
 	if (z == -1)
 	{
 		bail("write(2): It's not possible to write on socket.");

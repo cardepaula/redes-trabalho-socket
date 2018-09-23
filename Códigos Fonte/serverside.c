@@ -11,6 +11,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <string.h>
 
 typedef struct mensagem
 {
@@ -21,9 +22,22 @@ typedef struct mensagem
 	int codUsuario;
 } Message;
 
+typedef struct usuario
+{
+	int codUsuario;
+	char nomeUsuario[50];
+	int nivelAcesso;
+} User;
+
+/* Protótipos das funções */
+void verificaCredenciais(User **users, Message *msg, int qntUsuariosCredenciados);
+void atualizaRegistro(FILE *arqRegistros, Message *msg);
+User **criarBufferUsuarios(FILE *arqCredenciais, int qntUsuariosCredenciados);
+void apagarBufferUsuarios(User **users, int qntUsuariosCredenciados);
+int quantidadeUsuariosCredenciados(FILE *arqCredenciais);
+
 /* Esta função reporta erro e finaliza do programa: */
-static void
-bail(const char *on_what)
+static void bail(const char *on_what)
 {
 	if (errno != 0)
 	{
@@ -47,154 +61,284 @@ int main(int argc, char **argv)
 	int c;						   /* Socket par ao cliente */
 	int n;						   /* número de bytes lidos */
 	time_t td;					   /* Data e hora atual */
-	char dtbuf[128];			   /* Informações de data e hora */
+	//char dtbuf[128];			   /* Informações de data e hora */
 	Message msg;
-	FILE *arqCredenciais;
 	FILE *arqRegistros;
-	char caminhoArqCredenciais[] = "/home/marcos/Insync/IFES/IFES 2018 2/Redes/Trabalho 1/redes-trabalho-socket/Arquivos/credenciais_de_usuario.txt";
-	char caminhoArqRegistros[] = "/home/marcos/Insync/IFES/IFES 2018 2/Redes/Trabalho 1/redes-trabalho-socket/Arquivos/arquivo_de_registro.txt";
+	FILE *arqCredenciais;
+	char caminhoArqCredenciais[] = "/home/marcos/Insync/IFES/IFES 2018 2/Redes/Trabalho 1/redes-trabalho-socket/Códigos Fonte/database/credenciaisDeUsuario.txt";
+	char caminhoArqRegistros[] = "/home/marcos/Insync/IFES/IFES 2018 2/Redes/Trabalho 1/redes-trabalho-socket/Códigos Fonte/database/logDeRegistros.txt";
 	char cTmp[1000];
+	int a = 0;
+	int qntUsuariosCredenciados = 0;
+	User **users;
 
-	arqRegistros = fopen(caminhoArqRegistros, "a+");
-	if (arqRegistros == NULL)
+	/* Cria um socket do tipo TCP */
+	s = socket(PF_INET, SOCK_STREAM, 0);
+	if (s == -1)
 	{
-		printf("Error ao abrir o arquivo de registros\n");
+		bail("socket()");
+	}
+
+	/* Preenche a estrutura do socket com a porta e endereço do servidor */
+	memset(&adr_srvr, 0, sizeof(adr_srvr));
+	adr_srvr.sin_family = AF_INET;
+	adr_srvr.sin_port = htons(atoi(srvr_port));
+	if (strcmp(srvr_addr, "*") != 0)
+	{
+		/* Endereço normal */
+		adr_srvr.sin_addr.s_addr = inet_addr(srvr_addr);
+		if (adr_srvr.sin_addr.s_addr == INADDR_NONE)
+		{
+			bail("bad address.");
+		}
+	}
+	else
+	{
+		/* Qualquer endereço */
+		adr_srvr.sin_addr.s_addr = INADDR_ANY;
+	}
+
+	/* Liga (bind) o socket com o endereço/porta */
+	len_inet = sizeof(adr_srvr);
+	z = bind(s, (struct sockaddr *)&adr_srvr, len_inet);
+	if (z == -1)
+	{
+		bail("bind(2)");
+	}
+
+	/* Coloca o socket do servidor em estado de "escuta" com até 10 clientes simultâneos*/
+	z = listen(s, 10);
+	if (z == -1)
+	{
+		bail("listen(2)");
+	}
+
+	printf("Servidor online\n");
+
+	arqCredenciais = fopen(caminhoArqCredenciais, "r");
+	if (arqCredenciais == NULL)
+	{
+		printf("Error ao abrir o arquivo de Credenciais.\n");
 		exit(1);
 	}
 
-	while (!feof(arqCredenciais))
+	arqRegistros = fopen(caminhoArqRegistros, "a");
+	if (arqRegistros == NULL)
 	{
-		fgets(cTmp, 1000, arqCredenciais);
-		printf("FGETS - %s", cTmp);
-		//fprintf(arqRegistros, "%s", cTmp);
+		printf("Error ao abrir o arquivo de registros.\n");
+		exit(1);
 	}
 
-	rewind(arqCredenciais);
-	while (!feof(arqCredenciais))
-	{
-		char str1[100], str2[100], str3[100];
-		fscanf(arqCredenciais, "%s,%s,%s", str1, str2, str3);
-		printf("\nFSCANF: %s\n", str1);
-		printf("FSCANF: %s\n", str2);
-		printf("FSCANF: %s\n", str3);
+	//msg.codUsuario = 6528;
+	//msg.port = 5;
 
-		//fprintf(arqRegistros, "%s", cTmp);
+	qntUsuariosCredenciados = quantidadeUsuariosCredenciados(arqCredenciais);
+
+	users = criarBufferUsuarios(arqCredenciais, qntUsuariosCredenciados);
+
+	//printf("%s\n", msg.nomeUsuario);
+
+	/* Inicia o loop do servido: */
+	while (1)
+	{
+
+		/* Aguarda por uma solitação de conexão: */
+		len_inet = sizeof adr_clnt;
+		c = accept(s, (struct sockaddr *)&adr_clnt, &len_inet);
+
+		if (c == -1)
+		{
+			bail("accept(2)");
+		}
+
+		z = read(c, &msg, sizeof(Message));
+		if (z == -1)
+		{
+			bail("read(2): Its not possible to read the socket");
+		}
+
+		verificaCredenciais(users, &msg, qntUsuariosCredenciados);
+		printf("Verificar funcionou\n");
+		atualizaRegistro(arqRegistros, &msg);
+		printf("Atualizar funcionou\n");
+
+		//printf("Número da porta lida: %d\n", msg.port);
+		//printf("Código do cliente lido: %d\n", msg.codUsuario);
+
+		/* Informações escritas para o usuário */
+		// strcpy(msg.nomeUsuario, "SEHLORO 157");
+		// msg.port = 157;
+		// msg.autorizacao = 'A';
+		// msg.td = time(&msg.td);
+
+		/* Imprimi a data e a hora do servidor */
+		//printf("Nome: %s, data/hora: %s\n",msg.nomeUsuario, dtbuf);
+		//printf("It's working!!!\n");
+
+		/* Escreve o resultado no socket do cliente */
+		//z = write(c,dtbuf,n);
+		// z = write(c,(const void *) &td,sizeof(time_t));
+		// z = write(c,(const void *) &msg,sizeof(struct mensagem));
+		// if ( z == -1 ) {
+		// 	bail("write(2)");
+		// }
+
+		/* Fecha a conexão com o cliente corrente */
+		close(c);
 	}
 
+	apagarBufferUsuarios(users, qntUsuariosCredenciados);
+
+	fclose(arqCredenciais);
 	fclose(arqRegistros);
-
-	// /* Cria um socket do tipo TCP */
-	// s = socket(PF_INET, SOCK_STREAM, 0);
-	// if (s == -1)
-	// {
-	// 	bail("socket()");
-	// }
-
-	// /* Preenche a estrutura do socket com a porta e endereço do servidor */
-	// memset(&adr_srvr, 0, sizeof(adr_srvr));
-	// adr_srvr.sin_family = AF_INET;
-	// adr_srvr.sin_port = htons(atoi(srvr_port));
-	// if (strcmp(srvr_addr, "*") != 0)
-	// {
-	// 	/* Endereço normal */
-	// 	adr_srvr.sin_addr.s_addr = inet_addr(srvr_addr);
-	// 	if (adr_srvr.sin_addr.s_addr == INADDR_NONE)
-	// 	{
-	// 		bail("bad address.");
-	// 	}
-	// }
-	// else
-	// {
-	// 	/* Qualquer endereço */
-	// 	adr_srvr.sin_addr.s_addr = INADDR_ANY;
-	// }
-
-	// /* Liga (bind) o socket com o endereço/porta */
-	// len_inet = sizeof(adr_srvr);
-	// z = bind(s, (struct sockaddr *)&adr_srvr, len_inet);
-	// if (z == -1)
-	// {
-	// 	bail("bind(2)");
-	// }
-
-	// /* Coloca o socket do servidor em estado de "escuta" com até 10 clientes simultâneos*/
-	// z = listen(s, 10);
-	// if (z == -1)
-	// {
-	// 	bail("listen(2)");
-	// }
-
-	// /* Inicia o loop do servido: */
-	// while (1)
-	// {
-
-	// 	/* Aguarda por uma solitação de conexão: */
-	// 	len_inet = sizeof adr_clnt;
-	// 	c = accept(s, (struct sockaddr *)&adr_clnt, &len_inet);
-
-	// 	if (c == -1)
-	// 	{
-	// 		bail("accept(2)");
-	// 	}
-
-	// 	/* Gera a data e hora atual, onde o cliente faz requisições ao servidor: */
-	// 	time(&msg.td);
-	// 	n = (int)strftime(dtbuf, sizeof dtbuf, "%A %b %d %H:%M:%S %Y\n", localtime(&msg.td));
-	// 	dtbuf[n] = 0;
-
-	// 	z = read(c, &msg, sizeof(message));
-	// 	if (z == -1)
-	// 	{
-	// 		bail("read(2): Its not possible to read the socket");
-	// 	}
-
-	// 	//printf("Número da porta lida: %d\n", msg.port);
-	// 	//printf("Código do cliente lido: %d\n", msg.codUsuario);
-
-	// 	/* Informações escritas para o usuário */
-	// 	// strcpy(msg.nomeUsuario, "SEHLORO 157");
-	// 	// msg.port = 157;
-	// 	// msg.autorizacao = 'A';
-	// 	// msg.td = time(&msg.td);
-
-	// 	/* Imprimi a data e a hora do servidor */
-	// 	//printf("Nome: %s, data/hora: %s\n",msg.nomeUsuario, dtbuf);
-	// 	//printf("It's working!!!\n");
-
-	// 	/* Escreve o resultado no socket do cliente */
-	// 	//z = write(c,dtbuf,n);
-	// 	// z = write(c,(const void *) &td,sizeof(time_t));
-	// 	// z = write(c,(const void *) &msg,sizeof(struct mensagem));
-	// 	// if ( z == -1 ) {
-	// 	// 	bail("write(2)");
-	// 	// }
-
-	// 	/* Fecha a conexão com o cliente corrente */
-	// 	close(c);
-	// }
 
 	return 0;
 }
 
-int verificaCredenciais(char *caminhoArqCredenciais, Message *msg)
+int quantidadeUsuariosCredenciados(FILE *arqCredenciais)
 {
+	int cont = 0;
+	char c[100];
 
-	char arqCredenciais[] = fopen(caminhoArqCredenciais, "r");
-	if (arqCredenciais == NULL)
+	while (!feof(arqCredenciais))
 	{
-		printf("Error ao abrir o arquivo de Credenciais\n");
-		exit(1);
+		fgets(c, 100, arqCredenciais);
+		cont++;
+	}
+
+	/* Aponta para o início do arquivo */
+	rewind(arqCredenciais);
+
+	return cont;
+}
+
+/* Cria uma espécie de cache de usuário do arquivo de credenciais de usuário */
+User **criarBufferUsuarios(FILE *arqCredenciais, int qntUsuariosCredenciados)
+{
+	char str[80];
+	const char separador[2] = ",";
+	char *token;
+	char bufferLinhaArquivo[3][100];
+	int qtd = qntUsuariosCredenciados;
+	User **users = (User **)malloc(qtd * sizeof(User *));
+	int posicaoUsers = 0;
+
+	for (int i = 0; i < qtd; i++)
+	{
+		users[i] = (User *)malloc(sizeof(User));
 	}
 
 	while (!feof(arqCredenciais))
 	{
-		fgets(cTmp, 1000, arqCredenciais);
-		printf("FGETS - %s", cTmp);
+		fgets(str, 1000, arqCredenciais);
+
+		token = strtok(str, separador);
+		int i = 0;
+
+		while (token != NULL)
+		{
+			strcpy(bufferLinhaArquivo[i], token);
+
+			if (bufferLinhaArquivo[i][0] == ' ')
+			{
+				for (int contador = 0; contador < strlen(bufferLinhaArquivo[i]); contador++)
+				{
+					bufferLinhaArquivo[i][contador] = bufferLinhaArquivo[i][contador + 1];
+				}
+			}
+
+			token = strtok(NULL, separador);
+			i++;
+		}
+
+		users[posicaoUsers]->codUsuario = atoi(bufferLinhaArquivo[0]);
+		strcpy(users[posicaoUsers]->nomeUsuario, bufferLinhaArquivo[1]);
+		users[posicaoUsers]->nivelAcesso = atoi(bufferLinhaArquivo[2]);
+
+		// printf("Codigo:%d |", users[posicaoUsers]->codUsuario);
+		// printf(" Nome: %s |", users[posicaoUsers]->nomeUsuario);
+		// printf(" Nivel: %d\n", users[posicaoUsers]->nivelAcesso);
+		posicaoUsers++;
 	}
 
-	fclose(arqCredenciais);
+	/* Aponta para o início do arquivo */
+	rewind(arqCredenciais);
+
+	return users;
 }
 
-void atualizaRegistro(char *arqRegistros, char *registro)
+/* Libera o cache de usuários alocados */
+void apagarBufferUsuarios(User **users, int qntUsuariosCredenciados)
 {
+	if (users != NULL)
+	{
+		for (int i = 0; i < qntUsuariosCredenciados; i++)
+		{
+			free(users[i]);
+		}
+
+		free(users);
+	}
+}
+
+/* Verifica se o usuário existe no "banco de dados" do sistema e preenche as informações do
+usuário na estrutura mensagem*/
+void verificaCredenciais(User **users, Message *msg, int qntUsuariosCredenciados)
+{
+	time(&msg->td);
+	printf("Aqui!!!\n");
+	for (int i = 0; i < qntUsuariosCredenciados; i++)
+	{
+		printf("Aqui!!!\n");
+		//print("%"users[i]->codUsuario
+		if (users[i]->codUsuario == msg->codUsuario)
+		{
+
+			/* Preenche o campo da mensagem com o nome do usuário */
+			strcpy(msg->nomeUsuario, users[i]->nomeUsuario);
+
+			/* Verifica o acesstao a porta */
+			if (msg->port <= users[i]->nivelAcesso)
+			{
+				msg->autorizacao = 'A';
+			}
+			else
+			{
+				msg->autorizacao = 'N';
+			}
+
+			return;
+		}
+	}
+	/* Caso procure no loop todo o usuário e não encontra é enviado um caracter I 
+	I == Inexistente, ou seja, usuário inexistente no sistema */
+	msg->autorizacao = 'I';
+}
+
+/* Registra no log do sistema as tentativas de sucesso ou falha de acessar a porta */
+void atualizaRegistro(FILE *arqRegistros, Message *msg)
+{
+	char dtbuf[256];
+	int n = (int)strftime(dtbuf, sizeof(dtbuf), "%d/%m/%Y - %H:%M:%S %Y", localtime(&msg->td));
+	dtbuf[n] = 0;
+	char strAutorizacao[30];
+
+	switch (msg->autorizacao)
+	{
+	case 'A':
+		strcpy(strAutorizacao, "autorizado");
+		break;
+	case 'N':
+		strcpy(strAutorizacao, "negado");
+		break;
+	case 'I':
+		strcpy(strAutorizacao, "usuario nao cadastrado");
+		break;
+	default:
+		printf("Erro de tipo de autorização. Favor checar o sistema");
+		exit(3);
+	}
+
+	//printf("%s", dtbuf);
+	fprintf(arqRegistros, "%s, %d, %d, %s\n", dtbuf, msg->port, msg->codUsuario, strAutorizacao);
 }
