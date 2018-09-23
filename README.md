@@ -7,7 +7,7 @@
 </div>
 
 
-### Tutorial de executar os códigos com sucesso!
+## Tutorial de executar os códigos com sucesso!
     OBS.: O tutorial vai ser feito com o foco no ambiente Linux, pois nele que foi
     desenvolvido toda a implementação do trabalho. Logo se for usar o mesmo tutorial
     em outro ambiente/SO possivelmente terá problemas. Um exemplo disso é o caminho
