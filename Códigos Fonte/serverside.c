@@ -274,8 +274,10 @@ void apagarBufferUsuarios(User **users, int qntUsuariosCredenciados)
 usuário na estrutura mensagem*/
 void verificaCredenciais(User **users, Message *msg, int qntUsuariosCredenciados)
 {
+	/* Preenche o campo com o hora e data atual */
 	time(&msg->td);
 
+	/* Procura o usuário a partir de seu código */
 	for (int i = 0; i < qntUsuariosCredenciados; i++)
 	{
 		if (users[i]->codUsuario == msg->codUsuario)

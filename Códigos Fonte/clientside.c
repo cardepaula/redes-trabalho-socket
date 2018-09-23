@@ -20,6 +20,7 @@
 #define QNTMAXPORTAS 5;
 #define ENDERECOPADRAO "127.0.0.1";
 #define PORTAPADRAO "9099";
+#define ESPERASERVER 10;
 
 typedef struct mensagem
 {
@@ -118,6 +119,7 @@ int main(int argc, char *argv[])
 		/* Preenche a estrutura mensagem com a porta e o código do usuário */
 		msg.port = idPortaUsuario;
 		msg.codUsuario = codigoUsuario;
+		msg.autorizacao = '0';
 
 		/* Escreve a mensagem para o socket do servidor */
 		z = write(s, (const void *)&msg, sizeof(Message));
@@ -134,6 +136,30 @@ int main(int argc, char *argv[])
 			bail("read(2): It's not possible to read the socket");
 		}
 
+		/* Caso o campo mensagem ainda contenha '0' é porque não recebeu a resposta do server */
+		while (msg.autorizacao == '0') 
+		{
+			/* Escreve a mensagem novamente para o socket do servidor */
+			z = write(s, (const void *)&msg, sizeof(Message));
+			if (z == -1)
+			{
+				bail("write(2): It's not possible to write on socket.");
+			}
+
+			printf("\nEsperando o servidor...\n");
+
+			/* Espera por 10 segundos para o servidor escrever as informações no Message */
+			int tempoEspera = ESPERASERVER;
+			sleep(tempoEspera);
+
+			/* Lê de novo as informações do socket */
+			z = read(s, &msg, sizeof(Message));
+			if ( z == -1 ) 
+			{
+				bail("read(2): It's not possible to read the socket");
+			}
+		}
+
 		/* Imprime mensagem informando autorização do cliente/usuário */
 		putchar('\n');
 		mensagemAutorizacaoUsuario(&msg);
@@ -145,9 +171,6 @@ int main(int argc, char *argv[])
 		/* Lê o código do usuário pelo teclado */
 		codigoUsuario = leituraUsuario();
 	}
-
-	/* Caso o usuário digite -1 fecha o socket previamente aberto no loop while(1) */
-	//close(s);
 
 	return 0;
 }
