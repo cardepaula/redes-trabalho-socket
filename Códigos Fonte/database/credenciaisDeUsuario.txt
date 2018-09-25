@@ -3,9 +3,18 @@
 4298, Thor, 2
 6528, Natasha Romanoff, 3
 7458, Bruce Banner, 1
-4353, Zezinho 123, 1
-4562, Ula Ula Lula, 3
-1234, Zeyzal, 2
-1235, LuLla, 4
-9999, C9 Sneaky, 5
-1768, Estáciano do Sá, 4
+7866, Dr Hank Pym, 5
+6785, Janet van Dyne, 4
+9896, Clint Barton, 1
+3613, Wanda Maximoff, 2
+7760, T'Challa, 3
+6403, Visão, 5
+8424, Dr. Henry Phillip McCoy, 4
+3592, Carol Susan Jane Danvers, 3
+4964, Snap Thomas Wilson, 2
+5950, Prof. Reed Richards, 5
+7161, Susan Richards, 2
+2152, Benjamin Jacob Grim, 3
+5189, Jim Hammond, 1
+7769, Peter Parker, 3
+8756, Stephen Strange, 1
