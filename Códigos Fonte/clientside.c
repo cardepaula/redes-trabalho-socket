@@ -20,7 +20,6 @@
 #define QNTMAXPORTAS 5;
 #define ENDERECOPADRAO "127.0.0.1";
 #define PORTAPADRAO "9099";
-#define ESPERASERVER 10;
 
 typedef struct mensagem
 {
@@ -139,18 +138,14 @@ int main(int argc, char *argv[])
 		/* Caso o campo mensagem ainda contenha '0' é porque não recebeu a resposta do server */
 		while (msg.autorizacao == '0') 
 		{
+			printf("\nReenviando para o servidor.\n");
 			/* Escreve a mensagem novamente para o socket do servidor */
 			z = write(s, (const void *)&msg, sizeof(Message));
 			if (z == -1)
 			{
 				bail("write(2): It's not possible to write on socket.");
-			}
-
-			printf("\nEsperando o servidor...\n");
-
-			/* Espera por 10 segundos para o servidor escrever as informações no Message */
-			int tempoEspera = ESPERASERVER;
-			sleep(tempoEspera);
+			}	
+			
 
 			/* Lê de novo as informações do socket */
 			z = read(s, &msg, sizeof(Message));
